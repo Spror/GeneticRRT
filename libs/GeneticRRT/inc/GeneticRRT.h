@@ -1,4 +1,4 @@
-#include <ompl/base/Planner.h>
+/* #include <ompl/base/Planner.h>
  
 // often useful headers:
 #include <ompl/util/RandomNumbers.h>
@@ -91,4 +91,7 @@ namespace ompl
         }
  
     };
-}
+} */
+#include <iostream>
+
+void foo(int k);
