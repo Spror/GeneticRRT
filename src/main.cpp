@@ -9,6 +9,8 @@
 #include <ompl/geometric/planners/rrt/RRT.h>
 #include <ompl/geometric/SimpleSetup.h>
 
+#include "GeneticRRT.hpp"
+
 namespace ob = ompl::base;
 namespace og = ompl::geometric;
 
@@ -50,18 +52,18 @@ void plan()
 
     // create a random start state
     ob::ScopedState<> start(space);
-    start = (0,0);
+    start = (0, 0);
 
     // create a random goal state
     ob::ScopedState<> goal(space);
-    goal = (1,3);
+    goal = (1, 3);
 
     // set the start and goal states
     ss.setStartAndGoalStates(start, goal);
     ss.setPlanner(std::make_shared<og::RRT>(ss.getSpaceInformation()));
     // this call is optional, but we put it in to get more output information
     ss.setup();
-   // ss.print();
+    // ss.print();
 
     // attempt to solve the problem within one second of planning time
     ob::PlannerStatus solved = ss.solve(1.0);
@@ -79,17 +81,16 @@ void plan()
         ss.getSolutionPath().printAsMatrix(fileStream);
         // print the path to screen
         ss.simplifySolution();
-        //ss.getSolutionPath().print(std::cout);
+        // ss.getSolutionPath().print(std::cout);
     }
     else
-     std::cout << "No solution found" << std::endl;
-
+        std::cout << "No solution found" << std::endl;
 }
 
 int main(int, char **)
 {
-    for(auto i = 0; i <1000; i++)
-     plan();
+    foo(2);
+    plan();
 
     return 0;
 }
