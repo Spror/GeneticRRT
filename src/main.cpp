@@ -32,6 +32,71 @@ bool isStateValid(const ob::State *state)
     return true;
 }
 
+void plan2()
+{
+    // construct the state space we are planning in
+    auto space(std::make_shared<ob::SE3StateSpace>());
+
+    // set the bounds for the R^3 part of SE(3)
+    ob::RealVectorBounds bounds(3);
+    bounds.setLow(-1);
+    bounds.setHigh(1);
+
+    space->setBounds(bounds);
+
+    // construct an instance of  space information from this state space
+    auto si(std::make_shared<ob::SpaceInformation>(space));
+
+    // set state validity checking for this space
+    si->setStateValidityChecker(isStateValid);
+
+     // create a random start state
+     ob::ScopedState<> start(space);
+     start.random();
+  
+     // create a random goal state
+     ob::ScopedState<> goal(space);
+     goal.random();
+  
+
+    // create a problem instance
+    auto pdef(std::make_shared<ob::ProblemDefinition>(si));
+
+    // set the start and goal states
+    pdef->setStartAndGoalStates(start, goal);
+
+    // create a planner for the defined space
+    auto planner(std::make_shared<ompl::GeneticRRT>(si));
+
+    // set the problem we are trying to solve for the planner
+    planner->setProblemDefinition(pdef);
+
+    // perform setup steps for the planner
+    planner->setup();
+
+    // print the settings for this space
+    si->printSettings(std::cout);
+
+    // print the problem settings
+    pdef->print(std::cout);
+
+    // attempt to solve the problem within one second of planning time
+    ob::PlannerStatus solved = planner->ob::Planner::solve(1.0);
+
+    if (solved)
+    {
+        // get the goal representation from the problem definition (not the same as the goal state)
+        // and inquire about the found path
+        ob::PathPtr path = pdef->getSolutionPath();
+        std::cout << "Found solution:" << std::endl;
+
+        // print the path to screen
+        path->print(std::cout);
+    }
+    else
+        std::cout << "No solution found" << std::endl;
+}
+
 void plan()
 {
     // construct the state space we are planning in
@@ -90,7 +155,7 @@ void plan()
 int main(int, char **)
 {
     foo(2);
-    plan();
+    plan2();
 
     return 0;
 }
