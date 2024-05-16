@@ -19,28 +19,29 @@ bool isStateValid(const ob::State *state)
 
     // cast the abstract state type to the type we expect
     const auto *se2state = state->as<ob::SE2StateSpace::StateType>();
+    const auto x = se2state->getX();
+    const auto y = se2state->getY();
 
-    //  // extract the first component of the state and cast it to what we expect
-    const auto *pos = se2state->as<ob::RealVectorStateSpace::StateType>(0);
+    if( (x >= 100 && x <= 250) &&  (y >= 100 && y <= 250))
+    {
+        return false;
+    }
+    else
+    {
+        return true;
+    }
 
-    //  // extract the second component of the state and cast it to what we expect
-    // const auto *rot = se2state->as<ob::SO2StateSpace::StateSpace>(1);
-
-    //  // check validity of state defined by pos & rot
-
-    //  // return a value that is always true but uses the two variables we define, so we avoid compiler warnings
-    return true;
 }
 
 void plan2()
 {
     // construct the state space we are planning in
-    auto space(std::make_shared<ob::SE3StateSpace>());
+    auto space(std::make_shared<ob::SE2StateSpace>());
 
     // set the bounds for the R^3 part of SE(3)
-    ob::RealVectorBounds bounds(3);
-    bounds.setLow(-1);
-    bounds.setHigh(1);
+    ob::RealVectorBounds bounds(2);
+    bounds.setLow(0);
+    bounds.setHigh(502);
 
     space->setBounds(bounds);
 
@@ -49,15 +50,19 @@ void plan2()
 
     // set state validity checking for this space
     si->setStateValidityChecker(isStateValid);
+    si->setStateValidityCheckingResolution(0.001); // 3%
+    si->setup();
 
-     // create a random start state
-     ob::ScopedState<> start(space);
-     start.random();
-  
-     // create a random goal state
-     ob::ScopedState<> goal(space);
-     goal.random();
-  
+    // create a random start state
+    ob::ScopedState<> start(space);
+    start->as<ob::SE2StateSpace::StateType>()->setX(0);
+    start->as<ob::SE2StateSpace::StateType>()->setY(0);
+    start->as<ob::SE2StateSpace::StateType>()->setYaw(0);
+    // create a random goal state
+    ob::ScopedState<> goal(space);
+    goal->as<ob::SE2StateSpace::StateType>()->setX(400);
+    goal->as<ob::SE2StateSpace::StateType>()->setY(400);
+    goal->as<ob::SE2StateSpace::StateType>()->setYaw(0);
 
     // create a problem instance
     auto pdef(std::make_shared<ob::ProblemDefinition>(si));
@@ -67,6 +72,7 @@ void plan2()
 
     // create a planner for the defined space
     auto planner(std::make_shared<ompl::GeneticRRT>(si));
+    planner->setPopulation(400);
 
     // set the problem we are trying to solve for the planner
     planner->setProblemDefinition(pdef);
@@ -103,8 +109,8 @@ void plan()
     auto space(std::make_shared<ob::SE2StateSpace>());
 
     ob::RealVectorBounds bounds(2);
-    bounds.setLow(-4);
-    bounds.setHigh(4);
+    bounds.setLow(0);
+    bounds.setHigh(502);
 
     space->setBounds(bounds);
 
@@ -117,15 +123,17 @@ void plan()
 
     // create a random start state
     ob::ScopedState<> start(space);
-    start = (0, 0);
-
+    start->as<ob::SE2StateSpace::StateType>()->setX(0);
+    start->as<ob::SE2StateSpace::StateType>()->setY(0);
+    start->as<ob::SE2StateSpace::StateType>()->setYaw(0);
     // create a random goal state
     ob::ScopedState<> goal(space);
-    goal = (1, 3);
-
+    goal->as<ob::SE2StateSpace::StateType>()->setX(400);
+    goal->as<ob::SE2StateSpace::StateType>()->setY(400);
+    goal->as<ob::SE2StateSpace::StateType>()->setYaw(0);
     // set the start and goal states
     ss.setStartAndGoalStates(start, goal);
-    ss.setPlanner(std::make_shared<og::RRT>(ss.getSpaceInformation()));
+    ss.setPlanner(std::make_shared<og::RRTConnect>(ss.getSpaceInformation()));
     // this call is optional, but we put it in to get more output information
     ss.setup();
     // ss.print();

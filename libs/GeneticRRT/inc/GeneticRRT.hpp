@@ -16,9 +16,25 @@ namespace ompl
     class GeneticRRT : public base::Planner
     {
     private:
-        std::shared_ptr<geometric::RRT> RRTplanner_p;
-        int population_;
+        class Chromosome
+        {
+        public:
+            base::PlannerSolution genes_;
+            double fitness_;
+    
+            Chromosome(base::PlannerSolution genes);
+            void calculateFintess();
+            bool isValid() const;
 
+        };
+
+        std::shared_ptr<geometric::RRT> RRTplanner_p;
+        int populationNumber_;
+        int generationNumber_;
+        
+        auto findBestChromosome(std::vector<Chromosome> &chromosome_v) const;
+        Chromosome GA(Chromosome father, Chromosome mother);
+        
 
     public:
         GeneticRRT(const base::SpaceInformationPtr &si);
@@ -30,6 +46,8 @@ namespace ompl
 
         void setPopulation(int population);
         int getPopulation() const;
+        void setGeneration(int generation);
+        int getGeneration() const;
     };
 
 }
