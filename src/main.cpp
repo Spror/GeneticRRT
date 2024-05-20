@@ -6,6 +6,7 @@
 #include <ompl/base/spaces/SE3StateSpace.h>
 #include <ompl/base/spaces/SE2StateSpace.h>
 #include <ompl/geometric/planners/rrt/RRTConnect.h>
+#include <ompl/geometric/planners/rrt/RRTstar.h>
 #include <ompl/geometric/planners/rrt/RRT.h>
 #include <ompl/geometric/SimpleSetup.h>
 
@@ -72,10 +73,11 @@ void plan2()
 
     // create a planner for the defined space
     auto planner(std::make_shared<ompl::GeneticRRT>(si));
-    planner->setPopulation(400);
-
+    planner->setPopulation(150);
+    planner->setGeneration(10000);
     // set the problem we are trying to solve for the planner
     planner->setProblemDefinition(pdef);
+   
 
     // perform setup steps for the planner
     planner->setup();
@@ -133,7 +135,7 @@ void plan()
     goal->as<ob::SE2StateSpace::StateType>()->setYaw(0);
     // set the start and goal states
     ss.setStartAndGoalStates(start, goal);
-    ss.setPlanner(std::make_shared<og::RRTConnect>(ss.getSpaceInformation()));
+    ss.setPlanner(std::make_shared<og::RRTstar>(ss.getSpaceInformation()));
     // this call is optional, but we put it in to get more output information
     ss.setup();
     // ss.print();
@@ -144,7 +146,7 @@ void plan()
     if (solved)
     {
         std::ofstream fileStream;
-        fileStream.open("plik.txt");
+        fileStream.open("plik2.txt");
         if (!fileStream.is_open())
         {
             std::cerr << "File opening failed" << std::endl;
@@ -164,6 +166,7 @@ int main(int, char **)
 {
     foo(2);
     plan2();
+    plan();
 
     return 0;
 }

@@ -31,8 +31,11 @@ namespace ompl
         std::shared_ptr<geometric::RRT> RRTplanner_p;
         int populationNumber_;
         int generationNumber_;
+        std::mt19937 rng;
         
         auto findBestChromosome(std::vector<Chromosome> &chromosome_v) const;
+        void mutation(std::vector<base::State *> &path);
+        int select(std::vector<Chromosome>  chromosome_v);
         Chromosome GA(Chromosome father, Chromosome mother);
         
 
