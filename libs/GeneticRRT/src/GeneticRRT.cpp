@@ -77,54 +77,73 @@ auto ompl::GeneticRRT::findBestChromosome(std::vector<ompl::GeneticRRT::Chromoso
     return bestChromosome;
 }
 
-int ompl::GeneticRRT::select(std::vector<Chromosome>  chromosome_v)
+int ompl::GeneticRRT::select(std::vector<Chromosome> chromosome_v)
 {
     std::uniform_int_distribution<int> dist(0, chromosome_v.size() - 1);
-    std::map<double,int> members;
+    std::map<double, int> members;
 
-    for(auto i = 0; i < chromosome_v.size()*0.05; i++)
+    for (auto i = 0; i < chromosome_v.size() * 0.05; i++)
     {
         auto randomnumber = dist(rng);
         members[chromosome_v[randomnumber].fitness_] = randomnumber;
     }
 
     return members.begin()->second;
-
 }
 
-void ompl::GeneticRRT::mutation(std::vector<ompl::base::State *> &path)
+void ompl::GeneticRRT::deleteDuplicates(std::vector<base::State *> &states)
+{
+    if (states.size() > 3)
+    {
+        for (auto i = 0; i < states.size(); ++i)
+        {
+            for (auto j = i + 1; j < states.size();)
+            {
+                if (si_->equalStates(states[i], states[j]))
+                {
+                    states.erase(states.begin() + j);
+                }
+                else
+                {
+                    ++j;
+                }
+            }
+        }
+    }
+}
+
+std::vector<ompl::base::State *> ompl::GeneticRRT::mutation(std::vector<ompl::base::State *> states)
 {
 
-    for(auto i = 1; i<path.size()-1; i++)
+    auto size1 = states.size();
+    if (size1 > 3)
     {
-        si_->allocStateSampler()->sampleUniformNear(path[i], path[i], 5);
+        std::uniform_int_distribution<int> dist(1, states.size() - 2);
+        auto random = dist(rng);
+        states.erase(states.begin() + random);
+        auto size2 = states.size();
+        std::cout << size2 << std::endl;
     }
-        
 
-
+    return states;
 }
 
 ompl::GeneticRRT::Chromosome ompl::GeneticRRT::GA(Chromosome father, Chromosome mother)
 {
     auto fatherPath = father.genes_.path_->as<ompl::geometric::PathGeometric>()->getStates();
     auto motherPath = mother.genes_.path_->as<ompl::geometric::PathGeometric>()->getStates();
-    // std::ofstream fileStream;
-    // fileStream.open("plik.txt");
 
-    // father.genes_.path_->as<ompl::geometric::PathGeometric>()->printAsMatrix(fileStream);
-    // mother.genes_.path_->as<ompl::geometric::PathGeometric>()->printAsMatrix(fileStream);
+    auto fatherSize = fatherPath.size();
+    auto motherSize = motherPath.size();
 
-    auto halfFatherSize = fatherPath.size() / 2;
-    auto halfMotherSize = motherPath.size() / 2;
+    auto minHalfSize = std::min(fatherSize / 2, motherSize / 2);
 
-    auto minHalfSize = std::min(halfFatherSize, halfMotherSize);
+    std::uniform_int_distribution<int> dist(1, minHalfSize * 2 - 1);
+    auto randomPosition = dist(rng);
 
-    std::uniform_int_distribution<int> dist(1, minHalfSize*2 -1);
-    auto random = dist(rng);
+    std::swap_ranges(fatherPath.end() - randomPosition, fatherPath.end(), motherPath.end() - randomPosition);
 
-    std::swap_ranges(fatherPath.end() - random, fatherPath.end(), motherPath.end() - random);
-
-    std::vector<base::State *> statesFather, statesMother;
+    std::vector<base::State *> statesFather, statesMother, tempVec;
 
     for (auto const &it : fatherPath)
     {
@@ -135,19 +154,19 @@ ompl::GeneticRRT::Chromosome ompl::GeneticRRT::GA(Chromosome father, Chromosome 
         statesMother.push_back(it);
     }
 
-
     std::reverse(statesFather.begin(), statesFather.end());
     std::reverse(statesMother.begin(), statesMother.end());
 
-    
-    std::uniform_int_distribution<int> dist_2(0, 1000);
+    deleteDuplicates(statesFather);
+    deleteDuplicates(statesMother);
+
+    std::uniform_int_distribution<int> dist_2(0, 20);
     auto randomNumber = dist_2(rng);
 
     if (randomNumber == 1)
     {
-        //mutation(statesFather);
-       // mutation(statesMother);
-        std::cout << "udalo sie!" << std::endl;
+        statesFather = mutation(statesFather);
+        statesMother = mutation(statesMother);
     }
 
     auto newPathFather(std::make_shared<ompl::geometric::PathGeometric>(si_));
@@ -156,53 +175,43 @@ ompl::GeneticRRT::Chromosome ompl::GeneticRRT::GA(Chromosome father, Chromosome 
     for (int i = statesFather.size() - 1; i >= 0; --i)
         newPathFather->append(statesFather[i]);
 
-    
     for (int i = statesMother.size() - 1; i >= 0; --i)
         newPathMother->append(statesMother[i]);
 
-
-    if(newPathFather->check() && newPathMother->check())
+    if (newPathFather->check() && newPathMother->check())
     {
-        if(newPathFather->length() > newPathMother->length())
+        if (newPathFather->length() > newPathMother->length())
         {
             Chromosome child{{newPathFather}};
-            //child.genes_.path_->as<ompl::geometric::PathGeometric>()->printAsMatrix(fileStream);
             return child;
         }
         else
         {
             Chromosome child{{newPathMother}};
-           // child.genes_.path_->as<ompl::geometric::PathGeometric>()->printAsMatrix(fileStream);
             return child;
         }
     }
-    else if(newPathFather->check())
+    else if (newPathFather->check())
     {
         Chromosome child{{newPathFather}};
-        //child.genes_.path_->as<ompl::geometric::PathGeometric>()->printAsMatrix(fileStream);
         return child;
     }
-    else if(newPathMother->check())
+    else if (newPathMother->check())
     {
         Chromosome child{{newPathMother}};
-        //child.genes_.path_->as<ompl::geometric::PathGeometric>()->printAsMatrix(fileStream);
         return child;
     }
     else
     {
         return {{newPathFather}};
     }
-
-
-    // Chromosome child({newPathFather});
-        
 }
 
 ompl::base::PlannerStatus ompl::GeneticRRT::solve(const base::PlannerTerminationCondition &ptc)
 {
     RRTplanner_p->setProblemDefinition(this->getProblemDefinition());
     ompl::base::PlannerStatus ss;
-    //RRTplanner_p->setRange(30.0);
+    RRTplanner_p->setRange(30.0);
     std::ofstream fileStream;
     fileStream.open("plik.txt");
 
@@ -216,9 +225,11 @@ ompl::base::PlannerStatus ompl::GeneticRRT::solve(const base::PlannerTermination
         else
         {
             std::cerr << "Population generating failed" << std::endl;
-            pdef_->clearSolutionPaths();
+            // pdef_->clearSolutionPaths();
             RRTplanner_p->clear();
-            return {false, false};
+            i--;
+
+            // return {false, false};
         }
     }
 
@@ -232,40 +243,34 @@ ompl::base::PlannerStatus ompl::GeneticRRT::solve(const base::PlannerTermination
     auto p = *findBestChromosome(population);
 
     p.genes_.path_->as<ompl::geometric::PathGeometric>()->printAsMatrix(fileStream);
-    
+
     for (auto i = 0; i < generationNumber_;)
     {
         auto father = select(population);
         auto mother = select(population);
-    
 
-        if(father != mother){
+        if (father != mother)
+        {
             auto child = GA(population[father], population[mother]);
-            
 
             if (child.isValid())
             {
-                if(child.fitness_ < population[mother].fitness_)
+                if (child.fitness_ < population[mother].fitness_)
                 {
                     population[mother] = child;
-                    //std::cout << child.fitness_ << std::endl;
+                }
 
-                }
-                if(child.fitness_ < p.fitness_)
-                {
-                    child.genes_.path_->as<ompl::geometric::PathGeometric>()->printAsMatrix(fileStream);
-                }
                 i++;
                 std::cout << child.fitness_ << std::endl;
             }
         }
     }
 
-    auto  k = findBestChromosome(population);
+    auto k = findBestChromosome(population);
 
     k->calculateFintess();
-    std::cout << k->fitness_ << "dupa!" <<  p.fitness_ << std::endl;
-    
+    std::cout << k->fitness_ << "<- After // Before ->!" << p.fitness_ << std::endl;
+
     k->genes_.path_->as<ompl::geometric::PathGeometric>()->printAsMatrix(fileStream);
 
     pdef_->clearSolutionPaths();

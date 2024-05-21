@@ -10,6 +10,8 @@
 // often useful headers:
 #include <ompl/util/RandomNumbers.h>
 #include <ompl/tools/config/SelfConfig.h>
+#include <ompl/base/spaces/SE3StateSpace.h>
+#include <ompl/base/spaces/SE2StateSpace.h>
 
 namespace ompl
 {
@@ -34,9 +36,12 @@ namespace ompl
         std::mt19937 rng;
         
         auto findBestChromosome(std::vector<Chromosome> &chromosome_v) const;
-        void mutation(std::vector<base::State *> &path);
+        std::vector<ompl::base::State *> mutation(std::vector<base::State *> states);
         int select(std::vector<Chromosome>  chromosome_v);
         Chromosome GA(Chromosome father, Chromosome mother);
+        void deleteDuplicates(std::vector<base::State *> &states);
+
+
         
 
     public:

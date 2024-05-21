@@ -23,10 +23,11 @@ bool isStateValid(const ob::State *state)
     const auto x = se2state->getX();
     const auto y = se2state->getY();
 
-    if( (x >= 100 && x <= 250) &&  (y >= 100 && y <= 250))
+    if( ((x >= 100 && x <= 250) &&  (y >= 100 && y <= 250)) )
     {
         return false;
     }
+
     else
     {
         return true;
@@ -73,8 +74,8 @@ void plan2()
 
     // create a planner for the defined space
     auto planner(std::make_shared<ompl::GeneticRRT>(si));
-    planner->setPopulation(150);
-    planner->setGeneration(10000);
+    planner->setPopulation(2000);
+    planner->setGeneration(100000);
     // set the problem we are trying to solve for the planner
     planner->setProblemDefinition(pdef);
    
@@ -89,7 +90,7 @@ void plan2()
     pdef->print(std::cout);
 
     // attempt to solve the problem within one second of planning time
-    ob::PlannerStatus solved = planner->ob::Planner::solve(1.0);
+    ob::PlannerStatus solved = planner->ob::Planner::solve(6.0);
 
     if (solved)
     {
@@ -123,6 +124,8 @@ void plan()
     ss.setStateValidityChecker([](const ob::State *state)
                                { return isStateValid(state); });
 
+                                
+    ss.getSpaceInformation()->setStateValidityCheckingResolution(0.001);
     // create a random start state
     ob::ScopedState<> start(space);
     start->as<ob::SE2StateSpace::StateType>()->setX(0);
@@ -164,7 +167,7 @@ void plan()
 
 int main(int, char **)
 {
-    foo(2);
+   // foo(2);
     plan2();
     plan();
 
