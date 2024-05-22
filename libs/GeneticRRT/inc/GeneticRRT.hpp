@@ -36,7 +36,8 @@ namespace ompl
         std::mt19937 rng;
         
         auto findBestChromosome(std::vector<Chromosome> &chromosome_v) const;
-        std::vector<ompl::base::State *> mutation(std::vector<base::State *> states);
+        void mutationDeleteState(std::vector<base::State *> &states);
+        void mutationChangeState(std::vector<base::State *> &states);
         int select(std::vector<Chromosome>  chromosome_v);
         Chromosome GA(Chromosome father, Chromosome mother);
         void deleteDuplicates(std::vector<base::State *> &states);

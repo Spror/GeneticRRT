@@ -112,20 +112,40 @@ void ompl::GeneticRRT::deleteDuplicates(std::vector<base::State *> &states)
     }
 }
 
-std::vector<ompl::base::State *> ompl::GeneticRRT::mutation(std::vector<ompl::base::State *> states)
+void ompl::GeneticRRT::mutationDeleteState(std::vector<ompl::base::State *> &states)
 {
-
-    auto size1 = states.size();
-    if (size1 > 3)
+    auto size = states.size();
+    if (size > 3)
     {
-        std::uniform_int_distribution<int> dist(1, states.size() - 2);
+        std::uniform_int_distribution<int> dist(1, size - 2);
         auto random = dist(rng);
         states.erase(states.begin() + random);
-        auto size2 = states.size();
-        std::cout << size2 << std::endl;
     }
+}
 
-    return states;
+void ompl::GeneticRRT::mutationChangeState(std::vector<ompl::base::State *> &states)
+{
+    std::ofstream fileStream;
+    fileStream.open("plik3.txt");
+
+    auto nwrr(std::make_shared<ompl::geometric::PathGeometric>(si_));
+    for (int i = states.size() - 1; i >= 0; --i)
+        nwrr->append(states[i]);
+    nwrr->as<ompl::geometric::PathGeometric>()->printAsMatrix(fileStream);
+
+    std::uniform_int_distribution<int> dist(1, states.size() - 2);
+    auto randomPos = dist(rng);
+ 
+    si_->allocStateSampler()->sampleUniformNear(states[randomPos],states[randomPos], 5.0);
+
+
+    auto newPathMother(std::make_shared<ompl::geometric::PathGeometric>(si_));
+
+    for (int i = states.size() - 1; i >= 0; --i)
+        newPathMother->append(states[i]);
+    newPathMother->as<ompl::geometric::PathGeometric>()->printAsMatrix(fileStream);
+    //path_->as<ompl::geometric::PathGeometric>()->printAsMatrix(fileStream);
+    
 }
 
 ompl::GeneticRRT::Chromosome ompl::GeneticRRT::GA(Chromosome father, Chromosome mother)
@@ -165,8 +185,16 @@ ompl::GeneticRRT::Chromosome ompl::GeneticRRT::GA(Chromosome father, Chromosome 
 
     if (randomNumber == 1)
     {
-        statesFather = mutation(statesFather);
-        statesMother = mutation(statesMother);
+        mutationDeleteState(statesFather);
+        mutationDeleteState(statesMother);
+    }
+
+    randomNumber = dist_2(rng);
+
+    if (randomNumber == 1)
+    {
+        mutationChangeState(statesFather);
+        mutationChangeState(statesMother);
     }
 
     auto newPathFather(std::make_shared<ompl::geometric::PathGeometric>(si_));
@@ -211,7 +239,7 @@ ompl::base::PlannerStatus ompl::GeneticRRT::solve(const base::PlannerTermination
 {
     RRTplanner_p->setProblemDefinition(this->getProblemDefinition());
     ompl::base::PlannerStatus ss;
-    RRTplanner_p->setRange(30.0);
+    RRTplanner_p->setRange(20.0);
     std::ofstream fileStream;
     fileStream.open("plik.txt");
 
@@ -241,6 +269,7 @@ ompl::base::PlannerStatus ompl::GeneticRRT::solve(const base::PlannerTermination
     }
 
     auto p = *findBestChromosome(population);
+    auto bestResult = p;
 
     p.genes_.path_->as<ompl::geometric::PathGeometric>()->printAsMatrix(fileStream);
 
@@ -264,12 +293,19 @@ ompl::base::PlannerStatus ompl::GeneticRRT::solve(const base::PlannerTermination
                 std::cout << child.fitness_ << std::endl;
             }
         }
+        auto bestInPopulation = (*findBestChromosome(population)).fitness_;
+        if(bestResult.fitness_ > bestInPopulation)
+        {
+            bestResult = *findBestChromosome(population);
+            bestResult.genes_.path_->as<ompl::geometric::PathGeometric>()->printAsMatrix(fileStream);
+        }
     }
+
 
     auto k = findBestChromosome(population);
 
-    k->calculateFintess();
-    std::cout << k->fitness_ << "<- After // Before ->!" << p.fitness_ << std::endl;
+   // bestResult.calculateFintess();
+    std::cout << bestResult.fitness_ << "<- After // Before ->!" << p.fitness_ <<  "best in the last population:" << k->fitness_ << std::endl;
 
     k->genes_.path_->as<ompl::geometric::PathGeometric>()->printAsMatrix(fileStream);
 

@@ -15,6 +15,8 @@
 namespace ob = ompl::base;
 namespace og = ompl::geometric;
 
+
+
 bool isStateValid(const ob::State *state)
 {
 
@@ -23,11 +25,22 @@ bool isStateValid(const ob::State *state)
     const auto x = se2state->getX();
     const auto y = se2state->getY();
 
-    if( ((x >= 100 && x <= 250) &&  (y >= 100 && y <= 250)) )
+    if( ((x >= 50.0 && x <= 100.0) &&  (y >= 50 && y <= 100)) )
     {
         return false;
     }
-
+    else if( ((x >= 150.0 && x <= 400.0) &&  (y >= 150 && y <= 200)) )
+    {
+        return false;
+    }
+    else if( ((x >= 250.0 && x <= 300.0) &&  (y >= 250 && y <= 300)) )
+    {
+        return false;
+    }
+    else if( ((x >= 100.0 && x <= 150.0) &&  (y >= 100 && y <= 400)) )
+    {
+        return false;
+    }
     else
     {
         return true;
@@ -62,8 +75,8 @@ void plan2()
     start->as<ob::SE2StateSpace::StateType>()->setYaw(0);
     // create a random goal state
     ob::ScopedState<> goal(space);
-    goal->as<ob::SE2StateSpace::StateType>()->setX(400);
-    goal->as<ob::SE2StateSpace::StateType>()->setY(400);
+    goal->as<ob::SE2StateSpace::StateType>()->setX(350);
+    goal->as<ob::SE2StateSpace::StateType>()->setY(250);
     goal->as<ob::SE2StateSpace::StateType>()->setYaw(0);
 
     // create a problem instance
@@ -74,7 +87,7 @@ void plan2()
 
     // create a planner for the defined space
     auto planner(std::make_shared<ompl::GeneticRRT>(si));
-    planner->setPopulation(2000);
+    planner->setPopulation(1000);
     planner->setGeneration(100000);
     // set the problem we are trying to solve for the planner
     planner->setProblemDefinition(pdef);
@@ -90,7 +103,7 @@ void plan2()
     pdef->print(std::cout);
 
     // attempt to solve the problem within one second of planning time
-    ob::PlannerStatus solved = planner->ob::Planner::solve(6.0);
+    ob::PlannerStatus solved = planner->ob::Planner::solve(8.0);
 
     if (solved)
     {
@@ -104,6 +117,11 @@ void plan2()
     }
     else
         std::cout << "No solution found" << std::endl;
+
+    double measure = si->getSpaceMeasure();
+
+    // Output the space measure
+    std::cout << "Space measure: " << measure << std::endl;
 }
 
 void plan()
@@ -133,8 +151,8 @@ void plan()
     start->as<ob::SE2StateSpace::StateType>()->setYaw(0);
     // create a random goal state
     ob::ScopedState<> goal(space);
-    goal->as<ob::SE2StateSpace::StateType>()->setX(400);
-    goal->as<ob::SE2StateSpace::StateType>()->setY(400);
+    goal->as<ob::SE2StateSpace::StateType>()->setX(350);
+    goal->as<ob::SE2StateSpace::StateType>()->setY(250);
     goal->as<ob::SE2StateSpace::StateType>()->setYaw(0);
     // set the start and goal states
     ss.setStartAndGoalStates(start, goal);
