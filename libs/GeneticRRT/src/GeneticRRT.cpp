@@ -125,27 +125,14 @@ void ompl::GeneticRRT::mutationDeleteState(std::vector<ompl::base::State *> &sta
 
 void ompl::GeneticRRT::mutationChangeState(std::vector<ompl::base::State *> &states)
 {
-    std::ofstream fileStream;
-    fileStream.open("plik3.txt");
-
-    auto nwrr(std::make_shared<ompl::geometric::PathGeometric>(si_));
-    for (int i = states.size() - 1; i >= 0; --i)
-        nwrr->append(states[i]);
-    nwrr->as<ompl::geometric::PathGeometric>()->printAsMatrix(fileStream);
-
     std::uniform_int_distribution<int> dist(1, states.size() - 2);
     auto randomPos = dist(rng);
  
-    si_->allocStateSampler()->sampleUniformNear(states[randomPos],states[randomPos], 5.0);
+    auto sampler = si_->allocStateSampler();
+    base::State * newState = si_->allocState();
+    sampler->sampleUniformNear(newState, states[randomPos], 5.0);
 
-
-    auto newPathMother(std::make_shared<ompl::geometric::PathGeometric>(si_));
-
-    for (int i = states.size() - 1; i >= 0; --i)
-        newPathMother->append(states[i]);
-    newPathMother->as<ompl::geometric::PathGeometric>()->printAsMatrix(fileStream);
-    //path_->as<ompl::geometric::PathGeometric>()->printAsMatrix(fileStream);
-    
+    states[randomPos] = newState;
 }
 
 ompl::GeneticRRT::Chromosome ompl::GeneticRRT::GA(Chromosome father, Chromosome mother)
@@ -239,7 +226,7 @@ ompl::base::PlannerStatus ompl::GeneticRRT::solve(const base::PlannerTermination
 {
     RRTplanner_p->setProblemDefinition(this->getProblemDefinition());
     ompl::base::PlannerStatus ss;
-    RRTplanner_p->setRange(20.0);
+   // RRTplanner_p->setRange(40.0);
     std::ofstream fileStream;
     fileStream.open("plik.txt");
 
@@ -284,7 +271,7 @@ ompl::base::PlannerStatus ompl::GeneticRRT::solve(const base::PlannerTermination
 
             if (child.isValid())
             {
-                if (child.fitness_ < population[mother].fitness_)
+                if (child.fitness_ <= population[mother].fitness_)
                 {
                     population[mother] = child;
                 }

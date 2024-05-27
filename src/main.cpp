@@ -48,6 +48,191 @@ bool isStateValid(const ob::State *state)
 
 }
 
+bool isStateValid2(const ob::State *state)
+{
+    // cast the abstract state type to the type we expect
+    const auto *se3state = state->as<ob::SE3StateSpace::StateType>();
+    const auto x = se3state->getX();
+    const auto y = se3state->getY();
+    const auto z = se3state->getZ();
+
+    // Define the center and radius of the sphere
+    const auto centerX = 250.0;
+    const auto centerY = 250.0;
+    const auto centerZ = 250.0;
+    const auto radius = 100.0;
+
+    // Calculate the distance from the state to the center of the sphere
+    const auto distance = std::sqrt(std::pow(x - centerX, 2) +
+                                    std::pow(y - centerY, 2) +
+                                    std::pow(z - centerZ, 2));
+
+    // Check if the state is inside the sphere
+    if (distance <= radius)
+    {
+        return false;
+    }
+
+    // If not inside the sphere, the state is valid
+    return true;
+}
+
+void plan4()
+{
+    // construct the state space we are planning in
+    auto space(std::make_shared<ob::SE3StateSpace>());
+
+    // set the bounds for the R^3 part of SE(3)
+    ob::RealVectorBounds bounds(3);
+    bounds.setLow(0);
+    bounds.setHigh(500);
+
+    space->setBounds(bounds);
+
+    // construct an instance of  space information from this state space
+    auto si(std::make_shared<ob::SpaceInformation>(space));
+
+    // set state validity checking for this space
+    si->setStateValidityChecker(isStateValid2);
+    si->setStateValidityCheckingResolution(0.001); // 3%
+    si->setup();
+
+    ob::ScopedState<ob::SE3StateSpace> start(space);
+    start->setXYZ(0.0, 0.0, 0.0);  // Ustawienie pozycji startowej (x, y, z)
+    start->rotation().setIdentity();  // Ustawienie orientacji startowej (jednostkowy quaternion)
+
+    // Tworzenie stanu końcowego
+    ob::ScopedState<ob::SE3StateSpace> goal(space);
+    goal->setXYZ(400.0, 400.0, 400.0);  // Ustawienie pozycji końcowej (x, y, z)
+    goal->rotation().setIdentity();  // Ustawienie orientacji końcowej (jednostkowy quaternion)
+
+    // create a problem instance
+    auto pdef(std::make_shared<ob::ProblemDefinition>(si));
+
+    // set the start and goal states
+    pdef->setStartAndGoalStates(start, goal);
+
+    // create a planner for the defined space
+    auto planner(std::make_shared<og::RRTstar>(si));
+    // set the problem we are trying to solve for the planner
+    planner->setProblemDefinition(pdef);
+   
+
+    // perform setup steps for the planner
+    planner->setup();
+
+    // print the settings for this space
+    si->printSettings(std::cout);
+
+    // print the problem settings
+    pdef->print(std::cout);
+
+    // attempt to solve the problem within one second of planning time
+    ob::PlannerStatus solved = planner->ob::Planner::solve(8.0);
+
+    if (solved)
+    {
+        std::ofstream fileStream;
+        fileStream.open("plik2.txt");
+        if (!fileStream.is_open())
+        {
+            std::cerr << "File opening failed" << std::endl;
+        }
+        // get the goal representation from the problem definition (not the same as the goal state)
+        // and inquire about the found path
+        ob::PathPtr path = pdef->getSolutionPath();
+        std::cout << "Found solution:" << std::endl;
+        path->as<og::PathGeometric>()->printAsMatrix(fileStream);
+
+        // print the path to screen
+        path->print(std::cout);
+    }
+    else
+        std::cout << "No solution found" << std::endl;
+
+    double measure = si->getSpaceMeasure();
+
+    // Output the space measure
+    std::cout << "Space measure: " << measure << std::endl;
+}
+
+
+void plan3()
+{
+    // construct the state space we are planning in
+    auto space(std::make_shared<ob::SE3StateSpace>());
+
+    // set the bounds for the R^3 part of SE(3)
+    ob::RealVectorBounds bounds(3);
+    bounds.setLow(0);
+    bounds.setHigh(500);
+
+    space->setBounds(bounds);
+
+    // construct an instance of  space information from this state space
+    auto si(std::make_shared<ob::SpaceInformation>(space));
+
+    // set state validity checking for this space
+    si->setStateValidityChecker(isStateValid2);
+    si->setStateValidityCheckingResolution(0.001); // 3%
+    si->setup();
+
+    ob::ScopedState<ob::SE3StateSpace> start(space);
+    start->setXYZ(0.0, 0.0, 0.0);  // Ustawienie pozycji startowej (x, y, z)
+    start->rotation().setIdentity();  // Ustawienie orientacji startowej (jednostkowy quaternion)
+
+    // Tworzenie stanu końcowego
+    ob::ScopedState<ob::SE3StateSpace> goal(space);
+    goal->setXYZ(400.0, 400.0, 400.0);  // Ustawienie pozycji końcowej (x, y, z)
+    goal->rotation().setIdentity();  // Ustawienie orientacji końcowej (jednostkowy quaternion)
+
+    // create a problem instance
+    auto pdef(std::make_shared<ob::ProblemDefinition>(si));
+
+    // set the start and goal states
+    pdef->setStartAndGoalStates(start, goal);
+
+    // create a planner for the defined space
+    auto planner(std::make_shared<ompl::GeneticRRT>(si));
+    planner->setPopulation(1000);
+    planner->setGeneration(100000);
+    // set the problem we are trying to solve for the planner
+    planner->setProblemDefinition(pdef);
+   
+
+    // perform setup steps for the planner
+    planner->setup();
+
+    // print the settings for this space
+    si->printSettings(std::cout);
+
+    // print the problem settings
+    pdef->print(std::cout);
+
+    // attempt to solve the problem within one second of planning time
+    ob::PlannerStatus solved = planner->ob::Planner::solve(8.0);
+
+    if (solved)
+    {
+        // get the goal representation from the problem definition (not the same as the goal state)
+        // and inquire about the found path
+        ob::PathPtr path = pdef->getSolutionPath();
+        std::cout << "Found solution:" << std::endl;
+
+        // print the path to screen
+        path->print(std::cout);
+    }
+    else
+        std::cout << "No solution found" << std::endl;
+
+    double measure = si->getSpaceMeasure();
+
+    // Output the space measure
+    std::cout << "Space measure: " << measure << std::endl;
+}
+
+
+
 void plan2()
 {
     // construct the state space we are planning in
@@ -186,8 +371,8 @@ void plan()
 int main(int, char **)
 {
    // foo(2);
-    plan2();
-    plan();
+    plan3();
+    plan4();
 
     return 0;
 }
