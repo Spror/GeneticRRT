@@ -1,6 +1,8 @@
 #include <iostream>
 #include <fstream>
 
+#include "PlanningSetup.hpp"
+
 #include <ompl/config.h>
 #include <ompl/base/SpaceInformation.h>
 #include <ompl/base/spaces/SE3StateSpace.h>
@@ -370,7 +372,8 @@ void plan()
 
 int main(int, char **)
 {
-   // foo(2);
+    PlanningSetup k;
+    k.foo();
     plan3();
     plan4();
 
