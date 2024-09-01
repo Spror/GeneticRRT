@@ -65,7 +65,7 @@ void planSE3_2(int population, int generations, int p);
  * @param generations - number of generations used in GA
  * @param p - mutation chance
  */
-void planSE3_3(int population, int generations, int p);
+void planSE3_3(int population, int generations, double p);
 
 bool isStateValidSE3_1(const ob::State *state);
 bool isStateValidSE3_2(const ob::State *state);
@@ -83,8 +83,6 @@ bool isStateValidSE3_3(const ob::State *state);
  */
 bool isInsideBuilding(double x, double y, double z, const Building &building);
 
-void planSE3_1();
-void planSE3_2();
-void planSE3_3();
+
 
 

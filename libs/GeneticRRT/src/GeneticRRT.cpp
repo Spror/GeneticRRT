@@ -10,23 +10,21 @@ bool ompl::GeneticRRT::Chromosome::isValid() const
     return genes_.path_->as<ompl::geometric::PathGeometric>()->check();
 }
 
-/*Method to calculate fitness value*/
+
 void ompl::GeneticRRT::Chromosome::calculateFintess()
 {
     fitness_ = genes_.path_->as<ompl::geometric::PathGeometric>()->length();
 }
 
-void foo(int k)
-{
-    std::cout << "dzialam" << std::endl;
-}
 
-ompl::GeneticRRT::GeneticRRT(const base::SpaceInformationPtr &si) : ompl::base::Planner(si, "GeneticRRT"), RRTplanner_p{std::make_shared<ompl::geometric::RRT>(si)}, rng(std::time(nullptr))
+ompl::GeneticRRT::GeneticRRT(const base::SpaceInformationPtr &si) : ompl::base::Planner(si, "GeneticRRT"),
+    RRTplanner_p{std::make_shared<ompl::geometric::RRT>(si)}, rng(std::time(nullptr))
 {
     specs_.approximateSolutions = true;
 
     Planner::declareParam<int>("population num", this, &GeneticRRT::setPopulation, &GeneticRRT::getPopulation, "1:1:5000");
     Planner::declareParam<int>("generation num", this, &GeneticRRT::setGeneration, &GeneticRRT::getGeneration, "1:1:5000");
+    Planner::declareParam<double>("probability", this, &GeneticRRT::setProbability, &GeneticRRT::getProbability, "0.0:0.01:1.0");
 }
 
 ompl::GeneticRRT::~GeneticRRT(void)
@@ -39,10 +37,7 @@ void ompl::GeneticRRT::getPlannerData(base::PlannerData &data) const
 
 void ompl::GeneticRRT::clear(void)
 {
-}
-
-void ompl::GeneticRRT::setup(void)
-{
+    Planner::clear();
 }
 
 void ompl::GeneticRRT::setPopulation(int population)
@@ -53,6 +48,21 @@ void ompl::GeneticRRT::setPopulation(int population)
 int ompl::GeneticRRT::getPopulation() const
 {
     return populationNumber_;
+}
+
+void ompl::GeneticRRT::setProbability(double probability)
+{
+    probability_=probability;
+}
+       
+double  ompl::GeneticRRT::getProbability() const
+{
+    return probability_;
+}
+
+int64_t ompl::GeneticRRT::getDuration() const
+{
+    return duration;
 }
 
 void ompl::GeneticRRT::setGeneration(int generation)
@@ -81,8 +91,12 @@ int ompl::GeneticRRT::select(std::vector<Chromosome> chromosome_v)
 {
     std::uniform_int_distribution<int> dist(0, chromosome_v.size() - 1);
     std::map<double, int> members;
+    auto testSize = chromosome_v.size() * 0.05;
 
-    for (auto i = 0; i < chromosome_v.size() * 0.05; i++)
+    if(testSize < 1)
+        testSize =1.0;
+
+    for (auto i = 0; i < int(testSize) ; i++)
     {
         auto randomnumber = dist(rng);
         members[chromosome_v[randomnumber].fitness_] = randomnumber;
@@ -130,7 +144,7 @@ void ompl::GeneticRRT::mutationChangeState(std::vector<ompl::base::State *> &sta
  
     auto sampler = si_->allocStateSampler();
     base::State * newState = si_->allocState();
-    sampler->sampleUniformNear(newState, states[randomPos], 5.0);
+    sampler->sampleUniformNear(newState, states[randomPos], 50.0);
 
     states[randomPos] = newState;
 }
@@ -167,18 +181,17 @@ ompl::GeneticRRT::Chromosome ompl::GeneticRRT::GA(Chromosome father, Chromosome 
     deleteDuplicates(statesFather);
     deleteDuplicates(statesMother);
 
-    std::uniform_int_distribution<int> dist_2(0, 20);
-    auto randomNumber = dist_2(rng);
+   std::uniform_real_distribution<> uni_dist;
+   
 
-    if (randomNumber == 1)
+    if (uni_dist(rng) < probability_)
     {
         mutationDeleteState(statesFather);
         mutationDeleteState(statesMother);
     }
 
-    randomNumber = dist_2(rng);
 
-    if (randomNumber == 1)
+    if (uni_dist(rng) < probability_)
     {
         mutationChangeState(statesFather);
         mutationChangeState(statesMother);
@@ -224,27 +237,29 @@ ompl::GeneticRRT::Chromosome ompl::GeneticRRT::GA(Chromosome father, Chromosome 
 
 ompl::base::PlannerStatus ompl::GeneticRRT::solve(const base::PlannerTerminationCondition &ptc)
 {
+    std::chrono::steady_clock::time_point start, end;
+
+    start = std::chrono::steady_clock::now();
+
     RRTplanner_p->setProblemDefinition(this->getProblemDefinition());
+    
     ompl::base::PlannerStatus ss;
-   // RRTplanner_p->setRange(40.0);
-    std::ofstream fileStream;
-    fileStream.open("plik.txt");
+
 
     for (auto i = 0; i < populationNumber_; i++)
     {
         ss = RRTplanner_p->solve(ptc);
         if (ss)
         {
-            RRTplanner_p->clear();
+             RRTplanner_p->clear();
         }
         else
         {
             std::cerr << "Population generating failed" << std::endl;
-            // pdef_->clearSolutionPaths();
+            pdef_->clearSolutionPaths();
             RRTplanner_p->clear();
-            i--;
-
-            // return {false, false};
+            clear();
+            return {false, false};
         }
     }
 
@@ -255,10 +270,8 @@ ompl::base::PlannerStatus ompl::GeneticRRT::solve(const base::PlannerTermination
         population.push_back((solution));
     }
 
-    auto p = *findBestChromosome(population);
-    auto bestResult = p;
+    auto bestResult = *findBestChromosome(population);
 
-    p.genes_.path_->as<ompl::geometric::PathGeometric>()->printAsMatrix(fileStream);
 
     for (auto i = 0; i < generationNumber_;)
     {
@@ -280,24 +293,23 @@ ompl::base::PlannerStatus ompl::GeneticRRT::solve(const base::PlannerTermination
                 std::cout << child.fitness_ << std::endl;
             }
         }
-        auto bestInPopulation = (*findBestChromosome(population)).fitness_;
-        if(bestResult.fitness_ > bestInPopulation)
+        auto bestInPopulation = (*findBestChromosome(population));
+        if(bestResult.fitness_ > bestInPopulation.fitness_)
         {
-            bestResult = *findBestChromosome(population);
-            bestResult.genes_.path_->as<ompl::geometric::PathGeometric>()->printAsMatrix(fileStream);
+            bestResult = bestInPopulation;
         }
     }
 
 
     auto k = findBestChromosome(population);
-
-   // bestResult.calculateFintess();
-    std::cout << bestResult.fitness_ << "<- After // Before ->!" << p.fitness_ <<  "best in the last population:" << k->fitness_ << std::endl;
-
-    k->genes_.path_->as<ompl::geometric::PathGeometric>()->printAsMatrix(fileStream);
+    std::cout << bestResult.fitness_ << std::endl;
 
     pdef_->clearSolutionPaths();
     pdef_->addSolutionPath((*k).genes_);
+
+    end = std::chrono::steady_clock::now();
+
+    duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
 
     return ss;
 }

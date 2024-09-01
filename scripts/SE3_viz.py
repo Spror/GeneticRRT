@@ -187,7 +187,7 @@ def drawSE3_3(data):
 if __name__ == '__main__':
 
     # Read data from file
-    filename = '/home/wiktor/cxx/Sampling-basedMP/build/plik.txt'
+    filename = '/home/wiktor/cxx/Sampling-basedMP/build/file.txt'
     data = read_data(filename)
 
     if len(sys.argv) == 2:

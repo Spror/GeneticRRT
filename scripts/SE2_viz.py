@@ -6,6 +6,11 @@ from matplotlib.patches import Circle, Rectangle, Polygon
 
 def help():
     print("#### HELP ####")
+    print("######################################")
+    print("Python program to visualize paths in the SE3 space. Use special arguments to call: ")
+    print("SE2_1 -- Space without obstcles")
+    print("SE2_2 -- Space with one obstacle")
+    print("SE2_3 -- Maze simulation")
 
 # Define the shapes
 def draw_circle(ax, center_x, center_y, radius):
@@ -159,7 +164,7 @@ def drawSE2_3(data):
 if __name__ == '__main__':
 
     # Read data from file
-    filename = '/home/wiktor/cxx/Sampling-basedMP/build/plik.txt'
+    filename = '/home/wiktor/cxx/Sampling-basedMP/build/file.txt'
     data = read_data(filename)
 
     if len(sys.argv) == 2:

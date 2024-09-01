@@ -4,6 +4,7 @@
 #include <fstream>
 #include <algorithm>
 #include <random>
+#include <chrono>
 
 #include <ompl/base/Planner.h>
 #include <ompl/geometric/planners/rrt/RRT.h>
@@ -27,13 +28,14 @@ namespace ompl
             Chromosome(base::PlannerSolution genes);
             void calculateFintess();
             bool isValid() const;
-
         };
 
         std::shared_ptr<geometric::RRT> RRTplanner_p;
         int populationNumber_;
         int generationNumber_;
+        double  probability_;  // Probability of mutation (0.0 to 1.0)
         std::mt19937 rng;
+        int64_t duration;
         
         auto findBestChromosome(std::vector<Chromosome> &chromosome_v) const;
         void mutationDeleteState(std::vector<base::State *> &states);
@@ -42,23 +44,22 @@ namespace ompl
         Chromosome GA(Chromosome father, Chromosome mother);
         void deleteDuplicates(std::vector<base::State *> &states);
 
-
-        
-
     public:
         GeneticRRT(const base::SpaceInformationPtr &si);
         virtual ~GeneticRRT(void);
         virtual void getPlannerData(base::PlannerData &data) const;
         virtual void clear(void);
-        virtual void setup(void);
         virtual base::PlannerStatus solve(const base::PlannerTerminationCondition &ptc);
 
         void setPopulation(int population);
         int getPopulation() const;
         void setGeneration(int generation);
         int getGeneration() const;
+        int64_t getDuration() const;
+
+        void setProbability(double probability);
+        double getProbability() const;
+
     };
 
 }
-
-void foo(int k);

@@ -183,7 +183,7 @@ void planSE2_1(int population, int generations, int p)
     auto planner(std::make_shared<ompl::GeneticRRT>(si));
     planner->setPopulation(population);
     planner->setGeneration(generations);
-    planner->setP(p);
+    planner->setProbability(p);
     // set the problem we are trying to solve for the planner
     planner->setProblemDefinition(pdef);
 
@@ -201,9 +201,12 @@ void planSE2_1(int population, int generations, int p)
 
     if (solved)
     {
+        std::ofstream fileStream;
+        fileStream.open("file.txt");
         // get the goal representation from the problem definition (not the same as the goal state)
         // and inquire about the found path
         ob::PathPtr path = pdef->getSolutionPath();
+        path.get()->as<ompl::geometric::PathGeometric>()->printAsMatrix(fileStream);
         std::cout << "Found solution:" << std::endl;
 
         // print the path to screen
@@ -259,7 +262,7 @@ void planSE2_2(int population, int generations, int p)
     auto planner(std::make_shared<ompl::GeneticRRT>(si));
     planner->setPopulation(population);
     planner->setGeneration(generations);
-    planner->setP(p);
+    planner->setProbability(p);
     // set the problem we are trying to solve for the planner
     planner->setProblemDefinition(pdef);
 
@@ -277,9 +280,12 @@ void planSE2_2(int population, int generations, int p)
 
     if (solved)
     {
+        std::ofstream fileStream;
+        fileStream.open("file.txt");
         // get the goal representation from the problem definition (not the same as the goal state)
         // and inquire about the found path
         ob::PathPtr path = pdef->getSolutionPath();
+        path.get()->as<ompl::geometric::PathGeometric>()->printAsMatrix(fileStream);
         std::cout << "Found solution:" << std::endl;
 
         // print the path to screen
@@ -340,7 +346,7 @@ void planSE2_3(int population, int generations, int p)
 
     // perform setup steps for the planner
     planner->setup();
-    planner->setP(p);
+    planner->setProbability(p);
 
     // print the settings for this space
     si->printSettings(std::cout);
@@ -353,9 +359,12 @@ void planSE2_3(int population, int generations, int p)
 
     if (solved)
     {
+        std::ofstream fileStream;
+        fileStream.open("file.txt");
         // get the goal representation from the problem definition (not the same as the goal state)
         // and inquire about the found path
         ob::PathPtr path = pdef->getSolutionPath();
+        path.get()->as<ompl::geometric::PathGeometric>()->printAsMatrix(fileStream);
         std::cout << "Found solution:" << std::endl;
 
         // print the path to screen
