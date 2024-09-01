@@ -1,7 +1,7 @@
 #include <iostream>
 #include <fstream>
 
-#include "PlanningSetup.hpp"
+
 #include "SE2.hpp"
 #include "SE3.hpp"
 
