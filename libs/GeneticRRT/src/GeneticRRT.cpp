@@ -16,6 +16,17 @@ void ompl::GeneticRRT::Chromosome::calculateFintess()
     fitness_ = genes_.path_->as<ompl::geometric::PathGeometric>()->length();
 }
 
+bool ompl::GeneticRRT::Chromosome::operator ==( const Chromosome & c )
+{
+    if(this->genes_ == c.genes_)
+    {
+        return true;
+    }
+
+    else
+        return false;
+
+}
 
 ompl::GeneticRRT::GeneticRRT(const base::SpaceInformationPtr &si) : ompl::base::Planner(si, "GeneticRRT"),
     RRTplanner_p{std::make_shared<ompl::geometric::RRT>(si)}, rng(std::time(nullptr))
@@ -87,22 +98,25 @@ auto ompl::GeneticRRT::findBestChromosome(std::vector<ompl::GeneticRRT::Chromoso
     return bestChromosome;
 }
 
-int ompl::GeneticRRT::select(std::vector<Chromosome> chromosome_v)
+ompl::GeneticRRT::Chromosome& ompl::GeneticRRT::select(std::vector<Chromosome> &chromosome_v)
 {
+    assert(!chromosome_v.empty() && "chromosome_v must not be empty");
+
     std::uniform_int_distribution<int> dist(0, chromosome_v.size() - 1);
-    std::map<double, int> members;
-    auto testSize = chromosome_v.size() * 0.05;
+    auto tournamentSize = std::max(1, static_cast<int>(chromosome_v.size() * 0.05));
 
-    if(testSize < 1)
-        testSize =1.0;
+    int winnerIndex = dist(rng);
 
-    for (auto i = 0; i < int(testSize) ; i++)
+    for (auto i = 1; i < tournamentSize; i++)
     {
-        auto randomnumber = dist(rng);
-        members[chromosome_v[randomnumber].fitness_] = randomnumber;
+        auto randomIndex = dist(rng);
+        if (chromosome_v[randomIndex].fitness_ < chromosome_v[winnerIndex].fitness_)
+        {
+            winnerIndex = randomIndex;
+        }
     }
 
-    return members.begin()->second;
+    return chromosome_v[winnerIndex];
 }
 
 void ompl::GeneticRRT::deleteDuplicates(std::vector<base::State *> &states)
@@ -235,8 +249,10 @@ ompl::GeneticRRT::Chromosome ompl::GeneticRRT::GA(Chromosome father, Chromosome 
     }
 }
 
+
 ompl::base::PlannerStatus ompl::GeneticRRT::solve(const base::PlannerTerminationCondition &ptc)
 {
+    assert(populationNumber_ > 1 && "populationNumber_ should be greater than one");
     std::chrono::steady_clock::time_point start, end;
 
     start = std::chrono::steady_clock::now();
@@ -270,39 +286,48 @@ ompl::base::PlannerStatus ompl::GeneticRRT::solve(const base::PlannerTermination
         population.push_back((solution));
     }
 
+    auto kas = population;
+
     auto bestResult = *findBestChromosome(population);
+    auto kk = bestResult;
 
 
     for (auto i = 0; i < generationNumber_;)
     {
-        auto father = select(population);
-        auto mother = select(population);
+        auto &father = select(population);
+        auto &mother = select(population);
 
-        if (father != mother)
+        if (!(father == mother))
         {
-            auto child = GA(population[father], population[mother]);
+            auto child = GA(father, mother);
 
             if (child.isValid())
             {
-                if (child.fitness_ <= population[mother].fitness_)
+                if (child.fitness_ <= mother.fitness_)
                 {
-                    population[mother] = child;
+                    mother = child;
                 }
 
                 i++;
                 std::cout << child.fitness_ << std::endl;
             }
-        }
+
         auto bestInPopulation = (*findBestChromosome(population));
+
         if(bestResult.fitness_ > bestInPopulation.fitness_)
         {
             bestResult = bestInPopulation;
         }
+
+        }
     }
+        
+
 
 
     auto k = findBestChromosome(population);
-    std::cout << bestResult.fitness_ << std::endl;
+    std::cout << (*k).fitness_ << std::endl;
+    std::cout << kk.fitness_ << std::endl;
 
     pdef_->clearSolutionPaths();
     pdef_->addSolutionPath((*k).genes_);

@@ -28,6 +28,7 @@ namespace ompl
             Chromosome(base::PlannerSolution genes);
             void calculateFintess();
             bool isValid() const;
+            bool operator ==( const Chromosome & c );
         };
 
         std::shared_ptr<geometric::RRT> RRTplanner_p;
@@ -40,7 +41,7 @@ namespace ompl
         auto findBestChromosome(std::vector<Chromosome> &chromosome_v) const;
         void mutationDeleteState(std::vector<base::State *> &states);
         void mutationChangeState(std::vector<base::State *> &states);
-        int select(std::vector<Chromosome>  chromosome_v);
+        Chromosome& select(std::vector<Chromosome>  &chromosome_v);
         Chromosome GA(Chromosome father, Chromosome mother);
         void deleteDuplicates(std::vector<base::State *> &states);
 
