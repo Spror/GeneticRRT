@@ -26,7 +26,7 @@ namespace og = ompl::geometric;
 int main(int, char **)
 {
 
-    planSE3_3(1, 50000, 0.1);
+    planSE3_3(100, 50000, 0.1);
 
     return 0;
 }

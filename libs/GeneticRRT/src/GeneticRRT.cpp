@@ -29,7 +29,7 @@ bool ompl::GeneticRRT::Chromosome::operator ==( const Chromosome & c )
 }
 
 ompl::GeneticRRT::GeneticRRT(const base::SpaceInformationPtr &si) : ompl::base::Planner(si, "GeneticRRT"),
-    RRTplanner_p{std::make_shared<ompl::geometric::RRT>(si)}, rng(std::time(nullptr))
+    rng(std::time(nullptr))
 {
     specs_.approximateSolutions = true;
 
@@ -250,17 +250,12 @@ ompl::GeneticRRT::Chromosome ompl::GeneticRRT::GA(Chromosome father, Chromosome 
 }
 
 
-ompl::base::PlannerStatus ompl::GeneticRRT::solve(const base::PlannerTerminationCondition &ptc)
+bool ompl::GeneticRRT::generatePopulation(const base::PlannerTerminationCondition &ptc, std::vector<ompl::GeneticRRT::Chromosome>& population)
 {
-    assert(populationNumber_ > 1 && "populationNumber_ should be greater than one");
-    std::chrono::steady_clock::time_point start, end;
-
-    start = std::chrono::steady_clock::now();
+    std::shared_ptr<geometric::RRT> RRTplanner_p{std::make_shared<ompl::geometric::RRT>(this->getSpaceInformation())};
 
     RRTplanner_p->setProblemDefinition(this->getProblemDefinition());
-    
     ompl::base::PlannerStatus ss;
-
 
     for (auto i = 0; i < populationNumber_; i++)
     {
@@ -271,26 +266,39 @@ ompl::base::PlannerStatus ompl::GeneticRRT::solve(const base::PlannerTermination
         }
         else
         {
-            std::cerr << "Population generating failed" << std::endl;
-            pdef_->clearSolutionPaths();
+
             RRTplanner_p->clear();
-            clear();
-            return {false, false};
+            return false;
         }
     }
-
-    std::vector<ompl::GeneticRRT::Chromosome> population;
 
     for (auto &solution : pdef_->getSolutions())
     {
         population.push_back((solution));
     }
 
-    auto kas = population;
+    return true;
+
+}
+
+ompl::base::PlannerStatus ompl::GeneticRRT::solve(const base::PlannerTerminationCondition &ptc)
+{
+    assert(populationNumber_ > 1 && "populationNumber_ should be greater than one");
+
+    std::chrono::steady_clock::time_point start, end;
+    start = std::chrono::steady_clock::now();
+
+    std::vector<ompl::GeneticRRT::Chromosome> population;
+
+    if(!generatePopulation(ptc, population))
+    {
+        std::cerr << "Population generating failed" << std::endl;
+        pdef_->clearSolutionPaths();
+        clear();
+        return {false, false};
+    }
 
     auto bestResult = *findBestChromosome(population);
-    auto kk = bestResult;
-
 
     for (auto i = 0; i < generationNumber_;)
     {
@@ -312,29 +320,20 @@ ompl::base::PlannerStatus ompl::GeneticRRT::solve(const base::PlannerTermination
                 std::cout << child.fitness_ << std::endl;
             }
 
-        auto bestInPopulation = (*findBestChromosome(population));
+            auto bestInPopulation = (*findBestChromosome(population));
 
-        if(bestResult.fitness_ > bestInPopulation.fitness_)
-        {
-            bestResult = bestInPopulation;
-        }
-
+            if(bestResult.fitness_ > bestInPopulation.fitness_)
+            {
+                bestResult = bestInPopulation;
+            }
         }
     }
         
-
-
-
-    auto k = findBestChromosome(population);
-    std::cout << (*k).fitness_ << std::endl;
-    std::cout << kk.fitness_ << std::endl;
-
     pdef_->clearSolutionPaths();
-    pdef_->addSolutionPath((*k).genes_);
+    pdef_->addSolutionPath(bestResult.genes_);
 
     end = std::chrono::steady_clock::now();
-
     duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
-
-    return ss;
+    
+    return {true, true};
 }

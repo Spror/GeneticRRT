@@ -31,7 +31,7 @@ namespace ompl
             bool operator ==( const Chromosome & c );
         };
 
-        std::shared_ptr<geometric::RRT> RRTplanner_p;
+        
         int populationNumber_;
         int generationNumber_;
         double  probability_;  // Probability of mutation (0.0 to 1.0)
@@ -44,6 +44,7 @@ namespace ompl
         Chromosome& select(std::vector<Chromosome>  &chromosome_v);
         Chromosome GA(Chromosome father, Chromosome mother);
         void deleteDuplicates(std::vector<base::State *> &states);
+        bool generatePopulation(const base::PlannerTerminationCondition &ptc, std::vector<ompl::GeneticRRT::Chromosome>& population);
 
     public:
         GeneticRRT(const base::SpaceInformationPtr &si);
