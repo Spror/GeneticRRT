@@ -16,7 +16,7 @@ void ompl::GeneticRRT::Chromosome::calculateFitness()
     fitness_ = genes_.path_->as<ompl::geometric::PathGeometric>()->length();
 }
 
-bool ompl::GeneticRRT::Chromosome::operator ==( const Chromosome & c )
+bool ompl::GeneticRRT::Chromosome::operator ==(const Chromosome &c) const
 {
     if(this->genes_ == c.genes_)
     {
@@ -86,7 +86,7 @@ int ompl::GeneticRRT::getGeneration() const
     return generationNumber_;
 }
 
-auto ompl::GeneticRRT::findBestChromosome(std::vector<ompl::GeneticRRT::Chromosome> &chromosome_v) const
+auto ompl::GeneticRRT::findBestChromosome(std::vector<ompl::GeneticRRT::Chromosome> const &chromosome_v) const
 {
     auto compareByFitness = [](const ompl::GeneticRRT::Chromosome c1, const ompl::GeneticRRT::Chromosome c2)
     {
@@ -166,7 +166,43 @@ void ompl::GeneticRRT::mutationChangeState(std::vector<ompl::base::State *> &sta
  
 }
 
-ompl::GeneticRRT::Chromosome ompl::GeneticRRT::GA(Chromosome father, Chromosome mother)
+ompl::geometric::PathGeometricPtr ompl::GeneticRRT::createPathFromStates(std::vector<ompl::base::State *> const &states) const
+{
+    auto path_ptr(std::make_shared<ompl::geometric::PathGeometric>(si_));
+
+    for (int i = states.size() - 1; i >= 0; --i)
+        path_ptr->append(states[i]);
+
+    return path_ptr;
+}
+
+ompl::GeneticRRT::Chromosome ompl::GeneticRRT::chooseBetterPath(std::vector<base::State *>const  &path_a, std::vector<base::State *> const &path_b) const
+{
+    auto pathFather = createPathFromStates(path_a);
+    auto pathMother = createPathFromStates(path_b);
+
+
+    if (pathFather->check() && pathMother->check())
+    {
+        return (pathFather->length() > pathMother->length()) ? Chromosome{{pathFather}} : Chromosome{{pathMother}};
+    }
+    else if (pathFather->check())
+    {
+        return Chromosome{{pathFather}};
+    }
+    else if (pathMother->check())
+    {
+        return Chromosome{{pathMother}};
+    }
+    else
+    {
+        return Chromosome{{pathFather}};  // Default, if none are valid, return path1
+    }
+
+
+}
+
+ompl::GeneticRRT::Chromosome ompl::GeneticRRT::generateOffspring(Chromosome father, Chromosome mother)
 {
     auto fatherPath = father.genes_.path_->as<ompl::geometric::PathGeometric>()->getStates();
     auto motherPath = mother.genes_.path_->as<ompl::geometric::PathGeometric>()->getStates();
@@ -212,42 +248,7 @@ ompl::GeneticRRT::Chromosome ompl::GeneticRRT::GA(Chromosome father, Chromosome 
         mutationChangeState(statesMother);
     }
 
-    auto newPathFather(std::make_shared<ompl::geometric::PathGeometric>(si_));
-    auto newPathMother(std::make_shared<ompl::geometric::PathGeometric>(si_));
-
-    for (int i = statesFather.size() - 1; i >= 0; --i)
-        newPathFather->append(statesFather[i]);
-
-    for (int i = statesMother.size() - 1; i >= 0; --i)
-        newPathMother->append(statesMother[i]);
-
-    if (newPathFather->check() && newPathMother->check())
-    {
-        if (newPathFather->length() > newPathMother->length())
-        {
-            Chromosome child{{newPathFather}};
-            return child;
-        }
-        else
-        {
-            Chromosome child{{newPathMother}};
-            return child;
-        }
-    }
-    else if (newPathFather->check())
-    {
-        Chromosome child{{newPathFather}};
-        return child;
-    }
-    else if (newPathMother->check())
-    {
-        Chromosome child{{newPathMother}};
-        return child;
-    }
-    else
-    {
-        return {{newPathFather}};
-    }
+    return chooseBetterPath(statesFather,statesMother);
 }
 
 
@@ -307,7 +308,7 @@ ompl::base::PlannerStatus ompl::GeneticRRT::solve(const base::PlannerTermination
 
         if (!(father == mother))
         {
-            auto child = GA(father, mother);
+            auto child = generateOffspring(father, mother);
 
             if (child.isValid())
             {

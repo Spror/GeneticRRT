@@ -28,7 +28,7 @@ namespace ompl
             Chromosome(base::PlannerSolution genes);
             void calculateFitness();
             bool isValid() const;
-            bool operator ==( const Chromosome & c );
+            bool operator ==(const Chromosome &c) const;
         };
 
         
@@ -38,11 +38,13 @@ namespace ompl
         std::mt19937 rng;
         int64_t duration;
         
-        auto findBestChromosome(std::vector<Chromosome> &chromosome_v) const;
+        auto findBestChromosome(std::vector<Chromosome>const &chromosome_v) const;
         void mutationDeleteState(std::vector<base::State *> &states);
         void mutationChangeState(std::vector<base::State *> &states);
+        geometric::PathGeometricPtr createPathFromStates(std::vector<base::State *> const &states) const;
+        Chromosome chooseBetterPath(std::vector<base::State *> const &path_a, std::vector<base::State *> const  &path_b) const;
         Chromosome& select(std::vector<Chromosome>  &chromosome_v);
-        Chromosome GA(Chromosome father, Chromosome mother);
+        Chromosome generateOffspring(Chromosome father, Chromosome mother);
         void deleteDuplicates(std::vector<base::State *> &states);
         bool generatePopulation(const base::PlannerTerminationCondition &ptc, std::vector<ompl::GeneticRRT::Chromosome>& population);
 
