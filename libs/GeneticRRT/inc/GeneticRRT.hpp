@@ -63,5 +63,4 @@ namespace ompl
         double getProbability() const;
 
     };
-
 }

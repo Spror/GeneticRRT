@@ -158,16 +158,18 @@ void ompl::GeneticRRT::mutationChangeState(std::vector<ompl::base::State *> &sta
  
     auto sampler = si_->allocStateSampler();
     base::State * newState = si_->allocState();
+
     sampler->sampleUniformNear(newState, states[randomPos], 50.0);
 
-    states[randomPos] = newState;
+    si_->copyState(states[randomPos], newState);
+    si_->freeState(newState);
+ 
 }
 
 ompl::GeneticRRT::Chromosome ompl::GeneticRRT::GA(Chromosome father, Chromosome mother)
 {
     auto fatherPath = father.genes_.path_->as<ompl::geometric::PathGeometric>()->getStates();
     auto motherPath = mother.genes_.path_->as<ompl::geometric::PathGeometric>()->getStates();
-
     auto fatherSize = fatherPath.size();
     auto motherSize = motherPath.size();
 
@@ -178,7 +180,7 @@ ompl::GeneticRRT::Chromosome ompl::GeneticRRT::GA(Chromosome father, Chromosome 
 
     std::swap_ranges(fatherPath.end() - randomPosition, fatherPath.end(), motherPath.end() - randomPosition);
 
-    std::vector<base::State *> statesFather, statesMother, tempVec;
+    std::vector<base::State *> statesFather, statesMother;
 
     for (auto const &it : fatherPath)
     {
@@ -195,17 +197,16 @@ ompl::GeneticRRT::Chromosome ompl::GeneticRRT::GA(Chromosome father, Chromosome 
     deleteDuplicates(statesFather);
     deleteDuplicates(statesMother);
 
-   std::uniform_real_distribution<> uni_dist;
+    std::uniform_real_distribution<> mutationDist;
    
 
-    if (uni_dist(rng) < probability_)
+    if (mutationDist(rng) < probability_)
     {
         mutationDeleteState(statesFather);
         mutationDeleteState(statesMother);
     }
 
-
-    if (uni_dist(rng) < probability_)
+    if (mutationDist(rng) < probability_)
     {
         mutationChangeState(statesFather);
         mutationChangeState(statesMother);
@@ -266,7 +267,6 @@ bool ompl::GeneticRRT::generatePopulation(const base::PlannerTerminationConditio
         }
         else
         {
-
             RRTplanner_p->clear();
             return false;
         }
@@ -328,7 +328,7 @@ ompl::base::PlannerStatus ompl::GeneticRRT::solve(const base::PlannerTermination
             }
         }
     }
-        
+    std::cout << "d: " << bestResult.fitness_ << std::endl;
     pdef_->clearSolutionPaths();
     pdef_->addSolutionPath(bestResult.genes_);
 
