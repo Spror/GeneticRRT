@@ -26,7 +26,7 @@ namespace ompl
             double fitness_;
     
             Chromosome(base::PlannerSolution genes);
-            void calculateFintess();
+            void calculateFitness();
             bool isValid() const;
             bool operator ==( const Chromosome & c );
         };

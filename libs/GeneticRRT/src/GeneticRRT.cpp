@@ -2,7 +2,7 @@
 
 ompl::GeneticRRT::Chromosome::Chromosome(ompl::base::PlannerSolution genes) : genes_(genes)
 {
-    this->calculateFintess();
+    this->calculateFitness();
 }
 
 bool ompl::GeneticRRT::Chromosome::isValid() const
@@ -11,7 +11,7 @@ bool ompl::GeneticRRT::Chromosome::isValid() const
 }
 
 
-void ompl::GeneticRRT::Chromosome::calculateFintess()
+void ompl::GeneticRRT::Chromosome::calculateFitness()
 {
     fitness_ = genes_.path_->as<ompl::geometric::PathGeometric>()->length();
 }
