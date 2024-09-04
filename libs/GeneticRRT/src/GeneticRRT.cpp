@@ -1,6 +1,6 @@
 #include "GeneticRRT.hpp"
 
-ompl::GeneticRRT::Chromosome::Chromosome(ompl::base::PlannerSolution genes) : genes_(genes)
+ompl::GeneticRRT::Chromosome::Chromosome(const ompl::base::PlannerSolution genes) : genes_(genes)
 {
     this->calculateFitness();
 }
@@ -79,19 +79,19 @@ int ompl::GeneticRRT::getGeneration() const
     return generationNumber_;
 }
 
-auto ompl::GeneticRRT::findBestChromosome(std::vector<ompl::GeneticRRT::Chromosome> const &chromosome_v) const
+ompl::GeneticRRT::Chromosome ompl::GeneticRRT::findBestChromosome(const std::vector<ompl::GeneticRRT::Chromosome> &chromosome_v) const
 {
     auto compareByFitness = [](const ompl::GeneticRRT::Chromosome c1, const ompl::GeneticRRT::Chromosome c2)
     {
         return c1.fitness_ < c2.fitness_;
     };
 
-    auto bestChromosome = std::min_element(chromosome_v.begin(), chromosome_v.end(), compareByFitness);
+    const auto bestChromosome = std::min_element(chromosome_v.begin(), chromosome_v.end(), compareByFitness);
 
-    return bestChromosome;
+    return *bestChromosome;
 }
 
-ompl::GeneticRRT::Chromosome& ompl::GeneticRRT::select(std::vector<Chromosome> &chromosome_v)
+ompl::GeneticRRT::Chromosome& ompl::GeneticRRT::select(std::vector<Chromosome>  &chromosome_v)
 {
     assert(!chromosome_v.empty() && "chromosome_v must not be empty");
 
@@ -112,7 +112,7 @@ ompl::GeneticRRT::Chromosome& ompl::GeneticRRT::select(std::vector<Chromosome> &
     return chromosome_v[winnerIndex];
 }
 
-void ompl::GeneticRRT::deleteDuplicates(std::vector<base::State *> &states)
+void ompl::GeneticRRT::deleteDuplicates(std::vector<base::State *> &states) const
 {
     if (states.size() > 3)
     {
@@ -133,7 +133,7 @@ void ompl::GeneticRRT::deleteDuplicates(std::vector<base::State *> &states)
     }
 }
 
-void ompl::GeneticRRT::mutationDeleteState(std::vector<ompl::base::State *> &states)
+void ompl::GeneticRRT::mutationDeleteState(std::vector<ompl::base::State *> &states) 
 {
     auto size = states.size();
     if (size > 3)
@@ -144,7 +144,7 @@ void ompl::GeneticRRT::mutationDeleteState(std::vector<ompl::base::State *> &sta
     }
 }
 
-void ompl::GeneticRRT::mutationChangeState(std::vector<ompl::base::State *> &states)
+void ompl::GeneticRRT::mutationChangeState(std::vector<ompl::base::State *> &states) 
 {
     std::uniform_int_distribution<int> dist(1, states.size() - 2);
     auto randomPos = dist(rng_);
@@ -159,7 +159,7 @@ void ompl::GeneticRRT::mutationChangeState(std::vector<ompl::base::State *> &sta
  
 }
 
-ompl::geometric::PathGeometricPtr ompl::GeneticRRT::createPathFromStates(std::vector<ompl::base::State *> const &states) const
+ompl::geometric::PathGeometricPtr ompl::GeneticRRT::createPathFromStates(const std::vector<ompl::base::State *>  &states) const
 {
     auto path_ptr(std::make_shared<ompl::geometric::PathGeometric>(si_));
 
@@ -169,7 +169,7 @@ ompl::geometric::PathGeometricPtr ompl::GeneticRRT::createPathFromStates(std::ve
     return path_ptr;
 }
 
-ompl::GeneticRRT::Chromosome ompl::GeneticRRT::chooseBetterPath(std::vector<base::State *>const  &path_a, std::vector<base::State *> const &path_b) const
+ompl::GeneticRRT::Chromosome ompl::GeneticRRT::chooseBetterPath(const std::vector<base::State *>  &path_a,  const std::vector<base::State *> &path_b) const
 {
     auto pathFather = createPathFromStates(path_a);
     auto pathMother = createPathFromStates(path_b);
@@ -292,7 +292,7 @@ ompl::base::PlannerStatus ompl::GeneticRRT::solve(const base::PlannerTermination
         return {false, false};
     }
 
-    auto bestResult = *findBestChromosome(population);
+    auto bestResult = findBestChromosome(population);
 
     for (auto i = 0; i < generationNumber_;)
     {
@@ -314,7 +314,7 @@ ompl::base::PlannerStatus ompl::GeneticRRT::solve(const base::PlannerTermination
                 std::cout << child.fitness_ << std::endl;
             }
 
-            auto bestInPopulation = (*findBestChromosome(population));
+            auto bestInPopulation = findBestChromosome(population);
 
             if(bestResult.fitness_ > bestInPopulation.fitness_)
             {

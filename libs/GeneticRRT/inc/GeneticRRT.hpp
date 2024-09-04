@@ -24,29 +24,28 @@ namespace ompl
         public:
             base::PlannerSolution genes_;
             double fitness_;
-    
-            Chromosome(base::PlannerSolution genes);
+
+            Chromosome(const base::PlannerSolution genes);
             void calculateFitness();
             bool isValid() const;
-            bool operator ==(const Chromosome &c) const;
+            bool operator==(const Chromosome &c) const;
         };
 
-        
         int populationNumber_;
         int generationNumber_;
-        double  probability_;  // Probability of mutation (0.0 to 1.0)
+        double probability_; // Probability of mutation (0.0 to 1.0)
         std::mt19937 rng_;
         int64_t duration_;
-        
-        auto findBestChromosome(std::vector<Chromosome>const &chromosome_v) const;
+
+        Chromosome findBestChromosome(const std::vector<ompl::GeneticRRT::Chromosome> &chromosome_v) const;
         void mutationDeleteState(std::vector<base::State *> &states);
         void mutationChangeState(std::vector<base::State *> &states);
-        geometric::PathGeometricPtr createPathFromStates(std::vector<base::State *> const &states) const;
-        Chromosome chooseBetterPath(std::vector<base::State *> const &path_a, std::vector<base::State *> const  &path_b) const;
-        Chromosome& select(std::vector<Chromosome>  &chromosome_v);
+        geometric::PathGeometricPtr createPathFromStates(const std::vector<base::State *> &states) const;
+        Chromosome chooseBetterPath(const std::vector<base::State *> &path_a, const std::vector<base::State *> &path_b) const;
+        Chromosome &select(std::vector<Chromosome> &chromosome_v);
         Chromosome generateOffspring(Chromosome father, Chromosome mother);
-        void deleteDuplicates(std::vector<base::State *> &states);
-        bool generatePopulation(const base::PlannerTerminationCondition &ptc, std::vector<ompl::GeneticRRT::Chromosome>& population);
+        void deleteDuplicates(std::vector<base::State *> &states) const;
+        bool generatePopulation(const base::PlannerTerminationCondition &ptc, std::vector<ompl::GeneticRRT::Chromosome> &population);
 
     public:
         GeneticRRT(const base::SpaceInformationPtr &si);
@@ -63,6 +62,5 @@ namespace ompl
 
         void setProbability(double probability);
         double getProbability() const;
-
     };
 }
