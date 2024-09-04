@@ -35,8 +35,8 @@ namespace ompl
         int populationNumber_;
         int generationNumber_;
         double  probability_;  // Probability of mutation (0.0 to 1.0)
-        std::mt19937 rng;
-        int64_t duration;
+        std::mt19937 rng_;
+        int64_t duration_;
         
         auto findBestChromosome(std::vector<Chromosome>const &chromosome_v) const;
         void mutationDeleteState(std::vector<base::State *> &states);

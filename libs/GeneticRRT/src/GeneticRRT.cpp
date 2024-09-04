@@ -18,18 +18,11 @@ void ompl::GeneticRRT::Chromosome::calculateFitness()
 
 bool ompl::GeneticRRT::Chromosome::operator ==(const Chromosome &c) const
 {
-    if(this->genes_ == c.genes_)
-    {
-        return true;
-    }
-
-    else
-        return false;
-
+    return this->genes_ == c.genes_;
 }
 
 ompl::GeneticRRT::GeneticRRT(const base::SpaceInformationPtr &si) : ompl::base::Planner(si, "GeneticRRT"),
-    rng(std::time(nullptr))
+    rng_(std::time(nullptr))
 {
     specs_.approximateSolutions = true;
 
@@ -73,7 +66,7 @@ double  ompl::GeneticRRT::getProbability() const
 
 int64_t ompl::GeneticRRT::getDuration() const
 {
-    return duration;
+    return duration_;
 }
 
 void ompl::GeneticRRT::setGeneration(int generation)
@@ -105,11 +98,11 @@ ompl::GeneticRRT::Chromosome& ompl::GeneticRRT::select(std::vector<Chromosome> &
     std::uniform_int_distribution<int> dist(0, chromosome_v.size() - 1);
     auto tournamentSize = std::max(1, static_cast<int>(chromosome_v.size() * 0.05));
 
-    int winnerIndex = dist(rng);
+    int winnerIndex = dist(rng_);
 
     for (auto i = 1; i < tournamentSize; i++)
     {
-        auto randomIndex = dist(rng);
+        auto randomIndex = dist(rng_);
         if (chromosome_v[randomIndex].fitness_ < chromosome_v[winnerIndex].fitness_)
         {
             winnerIndex = randomIndex;
@@ -146,7 +139,7 @@ void ompl::GeneticRRT::mutationDeleteState(std::vector<ompl::base::State *> &sta
     if (size > 3)
     {
         std::uniform_int_distribution<int> dist(1, size - 2);
-        auto random = dist(rng);
+        auto random = dist(rng_);
         states.erase(states.begin() + random);
     }
 }
@@ -154,7 +147,7 @@ void ompl::GeneticRRT::mutationDeleteState(std::vector<ompl::base::State *> &sta
 void ompl::GeneticRRT::mutationChangeState(std::vector<ompl::base::State *> &states)
 {
     std::uniform_int_distribution<int> dist(1, states.size() - 2);
-    auto randomPos = dist(rng);
+    auto randomPos = dist(rng_);
  
     auto sampler = si_->allocStateSampler();
     base::State * newState = si_->allocState();
@@ -212,7 +205,7 @@ ompl::GeneticRRT::Chromosome ompl::GeneticRRT::generateOffspring(Chromosome fath
     auto minHalfSize = std::min(fatherSize / 2, motherSize / 2);
 
     std::uniform_int_distribution<int> dist(1, minHalfSize * 2 - 1);
-    auto randomPosition = dist(rng);
+    auto randomPosition = dist(rng_);
 
     std::swap_ranges(fatherPath.end() - randomPosition, fatherPath.end(), motherPath.end() - randomPosition);
 
@@ -236,13 +229,13 @@ ompl::GeneticRRT::Chromosome ompl::GeneticRRT::generateOffspring(Chromosome fath
     std::uniform_real_distribution<> mutationDist;
    
 
-    if (mutationDist(rng) < probability_)
+    if (mutationDist(rng_) < probability_)
     {
         mutationDeleteState(statesFather);
         mutationDeleteState(statesMother);
     }
 
-    if (mutationDist(rng) < probability_)
+    if (mutationDist(rng_) < probability_)
     {
         mutationChangeState(statesFather);
         mutationChangeState(statesMother);
@@ -334,7 +327,7 @@ ompl::base::PlannerStatus ompl::GeneticRRT::solve(const base::PlannerTermination
     pdef_->addSolutionPath(bestResult.genes_);
 
     end = std::chrono::steady_clock::now();
-    duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+    duration_ = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
     
     return {true, true};
 }
