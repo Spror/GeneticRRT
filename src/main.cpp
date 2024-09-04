@@ -25,8 +25,15 @@ namespace og = ompl::geometric;
 
 int main(int, char **)
 {
-
-    planSE3_3(100, 50000, 0.1);
-
+    try
+    {
+      planSE2_3(300, 10000, 0.1);
+    }
+    catch(const std::exception& e)
+    {
+        std::cerr << e.what() << '\n';
+    }
+    
+   
     return 0;
 }
