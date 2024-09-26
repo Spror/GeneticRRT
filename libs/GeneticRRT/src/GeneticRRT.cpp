@@ -224,48 +224,35 @@ ompl::GeneticRRT::Chromosome ompl::GeneticRRT::generateOffspring(Chromosome fath
 {
     auto fatherPath = father.genes_.path_->as<ompl::geometric::PathGeometric>()->getStates();
     auto motherPath = mother.genes_.path_->as<ompl::geometric::PathGeometric>()->getStates();
-    auto fatherSize = fatherPath.size();
-    auto motherSize = motherPath.size();
 
-    auto minHalfSize = std::min(fatherSize / 2, motherSize / 2);
+    auto minSize = std::min(fatherPath.size(), motherPath.size());
 
-    std::uniform_int_distribution<int> dist(1, minHalfSize * 2 - 1);
+    std::uniform_int_distribution<int> dist(1, minSize - 1);
     auto randomPosition = dist(rng_);
 
     std::swap_ranges(fatherPath.end() - randomPosition, fatherPath.end(), motherPath.end() - randomPosition);
 
-    std::vector<base::State *> statesFather, statesMother;
+    std::reverse(fatherPath.begin(), fatherPath.end());
+    std::reverse(motherPath.begin(), motherPath.end());
 
-    for (auto const &it : fatherPath)
-    {
-        statesFather.push_back(it);
-    }
-    for (auto const &it : motherPath)
-    {
-        statesMother.push_back(it);
-    }
-
-    std::reverse(statesFather.begin(), statesFather.end());
-    std::reverse(statesMother.begin(), statesMother.end());
-
-    deleteDuplicates(statesFather);
-    deleteDuplicates(statesMother);
+    deleteDuplicates(fatherPath);
+    deleteDuplicates(motherPath);
 
     std::uniform_real_distribution<> mutationDist;
 
     if (mutationDist(rng_) < probability_)
     {
-        mutationDeleteState(statesFather);
-        mutationDeleteState(statesMother);
+        mutationDeleteState(fatherPath);
+        mutationDeleteState(motherPath);
     }
 
     if (mutationDist(rng_) < probability_)
     {
-        mutationChangeState(statesFather);
-        mutationChangeState(statesMother);
+        mutationChangeState(fatherPath);
+        mutationChangeState(motherPath);
     }
 
-    return chooseBetterPath(statesFather, statesMother);
+    return chooseBetterPath(fatherPath, motherPath);
 }
 
 bool ompl::GeneticRRT::generatePopulation(const base::PlannerTerminationCondition &ptc, std::vector<ompl::GeneticRRT::Chromosome> &population)
