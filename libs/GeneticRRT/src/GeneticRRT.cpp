@@ -15,19 +15,18 @@ bool ompl::GeneticRRT::Chromosome::isValid() const
     return genes_.path_->as<ompl::geometric::PathGeometric>()->check();
 }
 
-
 void ompl::GeneticRRT::Chromosome::calculateFitness()
 {
     fitness_ = genes_.path_->as<ompl::geometric::PathGeometric>()->length();
 }
 
-bool ompl::GeneticRRT::Chromosome::operator ==(const Chromosome &c) const
+bool ompl::GeneticRRT::Chromosome::operator==(const Chromosome &c) const
 {
     return this->genes_ == c.genes_;
 }
 
 ompl::GeneticRRT::GeneticRRT(const base::SpaceInformationPtr &si) : ompl::base::Planner(si, "GeneticRRT"),
-    rng_(std::time(nullptr))
+                                                                    rng_(std::time(nullptr))
 {
     specs_.approximateSolutions = true;
 
@@ -69,10 +68,10 @@ void ompl::GeneticRRT::setProbability(double probability)
     {
         throw std::out_of_range("Mutation probability must be between 0.0 and 1.0.");
     }
-    probability_=probability;
+    probability_ = probability;
 }
-       
-double  ompl::GeneticRRT::getProbability() const
+
+double ompl::GeneticRRT::getProbability() const
 {
     return probability_;
 }
@@ -108,7 +107,7 @@ ompl::GeneticRRT::Chromosome ompl::GeneticRRT::findBestChromosome(const std::vec
     return *bestChromosome;
 }
 
-ompl::GeneticRRT::Chromosome& ompl::GeneticRRT::select(std::vector<Chromosome>  &chromosome_v)
+ompl::GeneticRRT::Chromosome &ompl::GeneticRRT::select(std::vector<Chromosome> &chromosome_v)
 {
     if (chromosome_v.empty())
     {
@@ -134,28 +133,26 @@ ompl::GeneticRRT::Chromosome& ompl::GeneticRRT::select(std::vector<Chromosome>  
 
 void ompl::GeneticRRT::deleteDuplicates(std::vector<base::State *> &states) const
 {
-    if (states.size() > 3)
-    {
-        for (auto i = 0; i < states.size(); ++i)
-        {
-            for (auto j = i + 1; j < states.size();)
-            {
-                if (si_->equalStates(states[i], states[j]))
-                {
-                    states.erase(states.begin() + j);
-                }
-                else
-                {
-                    ++j;
-                }
-            }
-        }
-    }
+    std::vector<base::State *> seen;
+
+    auto it = std::remove_if(begin(states), end(states), [&](auto state){
+                                for(const auto & ti_2 : seen)
+                                {
+                                    if(si_->equalStates(ti_2, state))
+                                    {
+                                        return true;
+                                    }
+                                }
+                                seen.push_back(state);
+                                return false;
+                            });
+
+    states.erase(it, end(states));
 }
 
-void ompl::GeneticRRT::mutationDeleteState(std::vector<ompl::base::State *> &states) 
+void ompl::GeneticRRT::mutationDeleteState(std::vector<ompl::base::State *> &states)
 {
-    if (states.size() < 2 )
+    if (states.size() < 2)
         throw std::invalid_argument("states size in mutationDeleteState should be greater than 2");
 
     auto size = states.size();
@@ -167,17 +164,17 @@ void ompl::GeneticRRT::mutationDeleteState(std::vector<ompl::base::State *> &sta
     }
 }
 
-void ompl::GeneticRRT::mutationChangeState(std::vector<ompl::base::State *> &states) 
+void ompl::GeneticRRT::mutationChangeState(std::vector<ompl::base::State *> &states)
 {
-    if (states.size() < 2 )
+    if (states.size() < 2)
         throw std::invalid_argument("states size in mutationChangeState should be greater than 2");
-    
+
     std::uniform_int_distribution<int> dist(1, states.size() - 2);
     auto randomPos = dist(rng_);
- 
+
     auto sampler = si_->allocStateSampler();
 
-    base::State * newState = si_->allocState();
+    base::State *newState = si_->allocState();
 
     sampler->sampleUniformNear(newState, states[randomPos], 50.0);
 
@@ -185,9 +182,9 @@ void ompl::GeneticRRT::mutationChangeState(std::vector<ompl::base::State *> &sta
     si_->freeState(newState);
 }
 
-ompl::geometric::PathGeometricPtr ompl::GeneticRRT::createPathFromStates(const std::vector<ompl::base::State *>  &states) const
+ompl::geometric::PathGeometricPtr ompl::GeneticRRT::createPathFromStates(const std::vector<ompl::base::State *> &states) const
 {
-    if(states.empty())
+    if (states.empty())
     {
         throw std::invalid_argument("States in createPathFromStates cannot be null");
     }
@@ -200,7 +197,7 @@ ompl::geometric::PathGeometricPtr ompl::GeneticRRT::createPathFromStates(const s
     return path_ptr;
 }
 
-ompl::GeneticRRT::Chromosome ompl::GeneticRRT::chooseBetterPath(const std::vector<base::State *>  &path_a,  const std::vector<base::State *> &path_b) const
+ompl::GeneticRRT::Chromosome ompl::GeneticRRT::chooseBetterPath(const std::vector<base::State *> &path_a, const std::vector<base::State *> &path_b) const
 {
     auto pathFather = createPathFromStates(path_a);
     auto pathMother = createPathFromStates(path_b);
@@ -219,11 +216,11 @@ ompl::GeneticRRT::Chromosome ompl::GeneticRRT::chooseBetterPath(const std::vecto
     }
     else
     {
-        return Chromosome{{pathFather}};  // Default, if none are valid, return path1
+        return Chromosome{{pathFather}}; // Default, if none are valid, return path1
     }
 }
 
-ompl::GeneticRRT::Chromosome ompl::GeneticRRT::generateOffspring(Chromosome father, Chromosome mother) 
+ompl::GeneticRRT::Chromosome ompl::GeneticRRT::generateOffspring(Chromosome father, Chromosome mother)
 {
     auto fatherPath = father.genes_.path_->as<ompl::geometric::PathGeometric>()->getStates();
     auto motherPath = mother.genes_.path_->as<ompl::geometric::PathGeometric>()->getStates();
@@ -268,11 +265,10 @@ ompl::GeneticRRT::Chromosome ompl::GeneticRRT::generateOffspring(Chromosome fath
         mutationChangeState(statesMother);
     }
 
-    return chooseBetterPath(statesFather,statesMother);
+    return chooseBetterPath(statesFather, statesMother);
 }
 
-
-bool ompl::GeneticRRT::generatePopulation(const base::PlannerTerminationCondition &ptc, std::vector<ompl::GeneticRRT::Chromosome>& population)
+bool ompl::GeneticRRT::generatePopulation(const base::PlannerTerminationCondition &ptc, std::vector<ompl::GeneticRRT::Chromosome> &population)
 {
     std::shared_ptr<geometric::RRT> RRTplanner_p{std::make_shared<ompl::geometric::RRT>(this->getSpaceInformation())};
 
@@ -284,7 +280,7 @@ bool ompl::GeneticRRT::generatePopulation(const base::PlannerTerminationConditio
         ss = RRTplanner_p->solve(ptc);
         if (ss)
         {
-             RRTplanner_p->clear();
+            RRTplanner_p->clear();
         }
         else
         {
@@ -311,7 +307,7 @@ ompl::base::PlannerStatus ompl::GeneticRRT::solve(const base::PlannerTermination
 
     std::vector<ompl::GeneticRRT::Chromosome> population;
 
-    if(!generatePopulation(ptc, population))
+    if (!generatePopulation(ptc, population))
     {
         std::cerr << "Population generating failed" << std::endl;
         pdef_->clearSolutionPaths();
@@ -342,7 +338,7 @@ ompl::base::PlannerStatus ompl::GeneticRRT::solve(const base::PlannerTermination
 
             auto bestInPopulation = findBestChromosome(population);
 
-            if(bestResult.fitness_ > bestInPopulation.fitness_)
+            if (bestResult.fitness_ > bestInPopulation.fitness_)
             {
                 bestResult = bestInPopulation;
             }
@@ -351,9 +347,9 @@ ompl::base::PlannerStatus ompl::GeneticRRT::solve(const base::PlannerTermination
     std::cout << "best result: " << bestResult.fitness_ << std::endl;
     pdef_->clearSolutionPaths();
     pdef_->addSolutionPath(bestResult.genes_);
-    
+
     end = std::chrono::steady_clock::now();
     duration_ = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
-    
+
     return {true, true};
 }
